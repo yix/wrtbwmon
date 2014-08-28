@@ -25,7 +25,7 @@
 # init default settings
 INSTALL_PREFIX=/opt
 INTERNAL_NETMASK=127.0.0.1
-DOWNLOAD_BASE=http://gitorious.org/wrtbwmon/wrtbwmon/blobs/raw/master
+DOWNLOAD_BASE=https://gitorious.org/wrtbwmon/yix-wrtbwmon/raw/wrtbwmon
 DOWNLOAD_FILE_LIST="$INSTALL_PREFIX/bin/wrtbwmon /www/user/data/traffic_chart.html"
 
 # directories
@@ -121,6 +121,9 @@ case ${COMMAND} in
 
     LAN_IFACE=$(nvram get lan_ifname)
     WAN_IFACE=$(nvram get wan_ifname)
+    if [[ ! -z "$LAN_IFACEs" ]]; then
+        LAN_IFACEs="$LAN_IFACE"
+    fi
 
     # check/create directories and symlinks
     [ -e $WWW_DIR ] || mkdir $WWW_DIR
@@ -146,18 +149,21 @@ case ${COMMAND} in
       iptables -I FORWARD -o ${WAN_IFACE} -j ACCOUNTING_OUT
     fi
 
-    #For each host in the ARP table
-    grep ${LAN_IFACE} /proc/net/arp | while read IP TYPE FLAGS MAC MASK IFACE
-    do
-      #Add iptables rules (if non existing).
-      iptables -nL ACCOUNTING_IN | grep "${IP} " > /dev/null
-      if [ $? -ne 0 ]; then
-        iptables -A ACCOUNTING_IN -d ${IP} -s ${INTERNAL_NETMASK} -j RETURN
-        iptables -A ACCOUNTING_IN -d ${IP} -s ! ${INTERNAL_NETMASK} -j RETURN
-
-        iptables -A ACCOUNTING_OUT -s ${IP} -d ${INTERNAL_NETMASK} -j RETURN
-        iptables -A ACCOUNTING_OUT -s ${IP} -d ! ${INTERNAL_NETMASK} -j RETURN
-      fi
+    #
+    for LAN_IFACE in ${LAN_IFACEs}; do
+        #For each host in the ARP table
+        grep ${LAN_IFACE} /proc/net/arp | while read IP TYPE FLAGS MAC MASK IFACE
+        do
+          #Add iptables rules (if non existing).
+          iptables -nL ACCOUNTING_IN | grep "${IP} " > /dev/null
+          if [ $? -ne 0 ]; then
+            iptables -A ACCOUNTING_IN -d ${IP} -s ${INTERNAL_NETMASK} -j RETURN
+            iptables -A ACCOUNTING_IN -d ${IP} -s ! ${INTERNAL_NETMASK} -j RETURN
+    
+            iptables -A ACCOUNTING_OUT -s ${IP} -d ${INTERNAL_NETMASK} -j RETURN
+            iptables -A ACCOUNTING_OUT -s ${IP} -d ! ${INTERNAL_NETMASK} -j RETURN
+          fi
+        done
     done
     ;;
 
