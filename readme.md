@@ -28,6 +28,13 @@ Optionally create a /opt/etc/wrtbwmon.rc to override default settings, i.e.
 INTERNAL_NETMASK=192.168.0.0/24
 ```
 
+Accounting for multiple LAN interfaces is supported you just need to list them in `LAN_IFACEs` variable in /opt/etc/wrtbwmon.rc i.e.
+
+```
+LAN_IFACEs="br0 br1 br2"
+```
+Where br0, br1 and br2 are LAN interfaces. If not specified accounting information will be collected for default LAN interface returned by `nvram get lan_ifname`.
+
 
 Call script with 'setup' and 'download_scripts' parameters:
 
